@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dat E</title>
+    <link rel="icon" type="image/png" href="/assets/app_icon.png">
+    <link rel="stylesheet" href="/web/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <img src="/assets/app_icon.png" alt="Dat E">
+        </div>
+
+        <h1 id="appTitle">Dat E</h1>
+        <p class="tagline" id="appTagline">Data Transfer Local</p>
+        <p class="version" id="appVersion">v1.0.1</p>
+        <p class="server-banner hidden" id="serverBanner"></p>
+
+        <div class="tabs">
+            <button type="button" class="tab active" data-tab="send" id="tabSend">Kirim ke PC</button>
+            <button type="button" class="tab" data-tab="receive" id="tabReceive">Unduh dari PC</button>
+        </div>
+
+        <section id="panelSend" class="panel active">
+            <label class="file-label">
+                <input type="file" id="fileInput">
+                <span class="file-placeholder">Pilih file</span>
+            </label>
+            <p class="file-name" id="fileName"></p>
+            <button type="button" class="upload-btn" id="sendBtn">Kirim File</button>
+            <div class="progress-container">
+                <div id="progressBar"></div>
+            </div>
+            <p id="status"></p>
+        </section>
+
+        <section id="panelReceive" class="panel">
+            <p class="hint" id="receiveHint">File yang dikirim dari PC akan muncul di sini.</p>
+            <ul class="file-list" id="outgoingList"></ul>
+            <button type="button" class="upload-btn secondary" id="refreshBtn">Muat ulang</button>
+            <p id="receiveStatus"></p>
+        </section>
+    </div>
+    <script src="/web/app.js"></script>
+</body>
+</html>

@@ -7,6 +7,7 @@ Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [1.2.0] - 2026-05-22
 
 ### Added
+- Script `trim_build.py` & `build_release.ps1` — release ZIP di bawah 25 MB
 - Log aktivitas server & client di Settings
 - Multi-bahasa (Indonesia & English) — siap untuk kontribusi terjemahan
 - Build output `DatE.exe` (PyInstaller)

@@ -14,12 +14,16 @@ dist/
 release/
 *.spec.bak
 
-# Runtime / user data (generated on machine)
+# Runtime data (generated on machine)
+data/*
+!data/.gitkeep
+uploads/
+test_uploads/
+
+# Legacy paths (migrated to data/)
 config.json
 server_data.json
 activity_log.json
-uploads/
-test_uploads/
 
 # IDE
 .vscode/

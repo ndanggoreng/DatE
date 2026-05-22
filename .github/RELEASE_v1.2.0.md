@@ -6,7 +6,7 @@ Transfer file antar perangkat dalam **WiFi lokal yang sama**, tanpa internet.
 
 | File | Keterangan |
 |------|------------|
-| `DatE-v1.2.0-windows.zip` | Aplikasi Windows (folder `DatE/` berisi `DatE.exe`) |
+| `DatE-v1.2.0-windows.zip` | Aplikasi Windows (~24 MB) — folder `DatE/` berisi `DatE.exe` |
 | Source code | Klik "Source code (zip)" di bawah jika tidak pakai asset ZIP |
 
 ### Cara pakai (singkat)

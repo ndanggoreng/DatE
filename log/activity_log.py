@@ -3,16 +3,18 @@ import os
 import threading
 from datetime import datetime
 
+from core.paths import log_dir
+
 MAX_ENTRIES = 300
 _lock = threading.Lock()
 
 
-def log_path(data_dir):
-    return os.path.join(data_dir, "activity_log.json")
+def log_path():
+    return os.path.join(log_dir(), "activity_log.json")
 
 
-def read_logs(data_dir):
-    path = log_path(data_dir)
+def read_logs():
+    path = log_path()
     if not os.path.exists(path):
         return []
     try:
@@ -23,7 +25,7 @@ def read_logs(data_dir):
         return []
 
 
-def append_log(data_dir, event, detail="", client=""):
+def append_log(event, detail="", client=""):
     entry = {
         "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "event": event,
@@ -31,17 +33,17 @@ def append_log(data_dir, event, detail="", client=""):
         "client": client,
     }
     with _lock:
-        logs = read_logs(data_dir)
+        logs = read_logs()
         logs.append(entry)
         logs = logs[-MAX_ENTRIES:]
-        path = log_path(data_dir)
+        path = log_path()
         with open(path, "w", encoding="utf-8") as f:
             json.dump({"entries": logs}, f, ensure_ascii=False, indent=0)
 
 
-def clear_logs(data_dir):
+def clear_logs():
     with _lock:
-        path = log_path(data_dir)
+        path = log_path()
         with open(path, "w", encoding="utf-8") as f:
             json.dump({"entries": []}, f)
 

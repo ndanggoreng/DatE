@@ -11,23 +11,12 @@ import sys
 import threading
 from urllib.parse import unquote
 
-from activity_log import append_log, read_logs
-from i18n import get_language, load_locale_file
-from version import APP_NAME, APP_TAGLINE, APP_VERSION
+from log.activity_log import append_log, read_logs
+from .i18n import get_language, load_locale_file
+from .paths import app_data_dir, outgoing_dir, res_dir
+from .version import APP_NAME, APP_TAGLINE, APP_VERSION
 
 DEFAULT_PORT = 8000
-
-
-def app_data_dir():
-    if getattr(sys, "frozen", False):
-        return os.path.dirname(sys.executable)
-    return os.path.dirname(os.path.abspath(__file__))
-
-
-def bundle_dir():
-    if getattr(sys, "frozen", False):
-        return sys._MEIPASS
-    return os.path.dirname(os.path.abspath(__file__))
 
 
 def ensure_data_files(bundle, data):
@@ -66,6 +55,45 @@ def read_json(path):
 def write_json(path, data):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f)
+
+
+def list_outgoing_files():
+    folder = outgoing_dir()
+    items = []
+    for name in os.listdir(folder):
+        path = os.path.join(folder, name)
+        if os.path.isfile(path):
+            items.append({
+                "name": name,
+                "size": os.path.getsize(path),
+            })
+    items.sort(key=lambda x: x["name"].lower())
+    return items
+
+
+def clear_outgoing_files():
+    """Kosongkan antrian kirim PC→HP (saat server dihentikan)."""
+    folder = outgoing_dir()
+    for name in os.listdir(folder):
+        path = os.path.join(folder, name)
+        if os.path.isfile(path):
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+
+
+def safe_outgoing_path(filename):
+    name = os.path.basename(filename.replace("\\", "/"))
+    if not name or name in (".", ".."):
+        return None
+    folder = os.path.realpath(outgoing_dir())
+    path = os.path.realpath(os.path.join(folder, name))
+    if not path.startswith(folder + os.sep) and path != folder:
+        return None
+    if not os.path.isfile(path):
+        return None
+    return path
 
 
 def get_upload_folder(data_dir):
@@ -229,7 +257,6 @@ class TransferHandler(http.server.BaseHTTPRequestHandler):
         safe_name = os.path.basename(file_path)
         client = self._client_ip()
         append_log(
-            self.data_dir,
             "upload_start",
             f"{safe_name} ({len(file_data)} bytes)",
             client,
@@ -253,7 +280,7 @@ class TransferHandler(http.server.BaseHTTPRequestHandler):
                     percent = int((uploaded / total) * 100) if total else 100
                     self._update_status(upload_progress=percent)
         except OSError as e:
-            append_log(self.data_dir, "upload_fail", str(e), client)
+            append_log("upload_fail", str(e), client)
             self._update_status(uploading=False, current_file="", upload_progress=0)
             return None, str(e)
 
@@ -265,7 +292,7 @@ class TransferHandler(http.server.BaseHTTPRequestHandler):
             payload["current_file"] = ""
             write_json(self.server_data_path, payload)
 
-        append_log(self.data_dir, "upload_ok", os.path.basename(file_path), client)
+        append_log("upload_ok", os.path.basename(file_path), client)
         return file_path, None
 
     def do_OPTIONS(self):
@@ -297,18 +324,62 @@ class TransferHandler(http.server.BaseHTTPRequestHandler):
             return
 
         if path == "/api/logs":
-            self._send_json({"entries": read_logs(self.data_dir)})
+            self._send_json({"entries": read_logs()})
+            return
+
+        if path == "/api/outgoing":
+            files = list_outgoing_files()
+            self._send_json({
+                "files": [
+                    {
+                        "name": f["name"],
+                        "size": f["size"],
+                        "url": f"/download/{f['name']}",
+                    }
+                    for f in files
+                ]
+            })
+            return
+
+        if path.startswith("/download/"):
+            rel = unquote(path[10:])
+            file_path = safe_outgoing_path(rel)
+            if not file_path:
+                self.send_error(404)
+                return
+            client = self._client_ip()
+            append_log("download_start", os.path.basename(file_path), client)
+            try:
+                with open(file_path, "rb") as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header(
+                    "Content-Type", "application/octet-stream"
+                )
+                self.send_header(
+                    "Content-Disposition",
+                    f'attachment; filename="{os.path.basename(file_path)}"',
+                )
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(body)
+                append_log("download_ok", os.path.basename(file_path), client)
+            except OSError as e:
+                append_log("download_fail", str(e), client)
+                self.send_error(500)
             return
 
         if path == "/api/status":
             with self._data_lock:
                 payload = read_json(self.server_data_path)
+            payload["server_running"] = True
             self._send_json(payload)
             return
 
         if path == "/":
             client = self._client_ip()
-            append_log(self.data_dir, "client_connect", self.path, client)
+            append_log("client_connect", self.path, client)
             with self._data_lock:
                 payload = read_json(self.server_data_path)
                 payload["connected_devices"] = payload.get("connected_devices", 0) + 1
@@ -357,7 +428,6 @@ class TransferHandler(http.server.BaseHTTPRequestHandler):
 
         if not filename or file_data is None:
             append_log(
-                self.data_dir,
                 "upload_fail",
                 "file not readable",
                 self._client_ip(),
@@ -382,6 +452,15 @@ class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     allow_reuse_address = True
 
 
+def queue_outgoing_file(source_path):
+    """Salin file ke antrian kirim (PC → HP)."""
+    name = os.path.basename(source_path)
+    dest = unique_path(outgoing_dir(), name)
+    shutil.copy2(source_path, dest)
+    append_log("share_queued", os.path.basename(dest), "")
+    return dest
+
+
 class HttpTransferServer:
     def __init__(self, bundle, data, port):
         self.bundle = bundle
@@ -393,7 +472,7 @@ class HttpTransferServer:
     @classmethod
     def prepare_handler(cls, bundle, data):
         ensure_data_files(bundle, data)
-        TransferHandler.bundle_dir = bundle
+        TransferHandler.bundle_dir = bundle  # res/
         TransferHandler.data_dir = data
         TransferHandler.config_path = os.path.join(data, "config.json")
         TransferHandler.server_data_path = os.path.join(data, "server_data.json")

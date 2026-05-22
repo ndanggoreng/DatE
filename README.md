@@ -117,15 +117,26 @@ python DatE.py
 
 ### Build menjadi EXE
 
+```powershell
+# Disarankan: build + trim Qt + ZIP release (< 25 MB)
+.\build_release.ps1
+```
+
+Atau manual:
+
 ```bash
 pyinstaller dekstop.spec --noconfirm
+py trim_build.py
 ```
 
 Hasil build:
 
 ```
 dist/DatE/DatE.exe
+release/DatE-v1.2.0-windows.zip   # siap upload ke GitHub Releases
 ```
+
+> **Catatan ukuran:** PyInstaller menyertakan banyak library Qt. Script `trim_build.py` menghapus modul yang tidak dipakai (QML, PDF, OpenGL software, terjemahan Qt) agar ZIP release **≤ 25 MB**. Kompresi ZIP memakai 7-Zip (`-mx=9`) jika terinstal.
 
 Jalankan `DatE.exe` dari folder `dist/DatE/`.
 

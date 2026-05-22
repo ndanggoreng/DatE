@@ -1,7 +1,7 @@
 import json
 import os
 
-from version import APP_NAME, APP_TAGLINE
+from .version import APP_NAME, APP_TAGLINE
 
 DEFAULT_LANG = "id"
 SUPPORTED = ("id", "en")

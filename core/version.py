@@ -1,4 +1,4 @@
 APP_NAME = "Dat E"
 APP_TAGLINE = "Data Transfer Local"
 APP_TITLE = f"{APP_NAME} ({APP_TAGLINE})"
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.3.0"

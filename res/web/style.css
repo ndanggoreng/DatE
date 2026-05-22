@@ -54,7 +54,51 @@ h1 {
 .version {
     color: #64748b;
     font-size: 12px;
-    margin-bottom: 20px;
+    margin-bottom: 8px;
+}
+
+.server-banner {
+    color: #f87171;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    line-height: 1.35;
+}
+
+.server-banner.hidden {
+    display: none;
+}
+
+.tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.tab {
+    flex: 1;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 8px;
+    background: #0f172a;
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.tab.active {
+    background: #2563eb;
+    color: #fff;
+}
+
+.panel {
+    display: none;
+    text-align: center;
+}
+
+.panel.active {
+    display: block;
 }
 
 .file-label {
@@ -102,8 +146,66 @@ h1 {
     cursor: pointer;
 }
 
+.upload-btn.secondary {
+    background: #475569;
+    margin-top: 12px;
+}
+
 .upload-btn:active {
     background: #3b82f6;
+}
+
+.hint {
+    color: #94a3b8;
+    font-size: 12px;
+    margin-bottom: 12px;
+    line-height: 1.4;
+}
+
+.file-list {
+    list-style: none;
+    text-align: left;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 8px;
+}
+
+.file-list li {
+    margin-bottom: 8px;
+}
+
+.file-list li.empty {
+    text-align: center;
+    color: #64748b;
+    font-size: 13px;
+    padding: 12px 0;
+}
+
+.download-item {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    background: #0f172a;
+    color: #e2e8f0;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.download-item .name {
+    flex: 1;
+    text-align: left;
+    word-break: break-all;
+}
+
+.download-item .size {
+    color: #64748b;
+    font-size: 11px;
+    white-space: nowrap;
 }
 
 .progress-container {
@@ -122,7 +224,8 @@ h1 {
     transition: 0.2s;
 }
 
-#status {
+#status,
+#receiveStatus {
     margin-top: 10px;
     color: #e2e8f0;
     font-size: 13px;
