@@ -4,6 +4,28 @@ Semua perubahan penting pada proyek Dat E didokumentasikan di file ini.
 
 Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.0] - 2026-05-23
+
+### Added
+- Transfer **PC → HP**: tombol **Kirim ke HP** di desktop + tab **Unduh dari PC** di web client
+- Endpoint `/api/outgoing` dan `/download/<nama>` untuk unduhan dari browser
+- Deteksi server offline di web client (polling, banner, alert saat pilih/unduh file)
+- Struktur proyek dirapikan: `core/`, `log/`, `res/`, `data/`, `sys/`
+- Launcher `DatE.py` di root; modul utama `core/app.py`
+- Migrasi otomatis config/log lama ke folder `data/`
+
+### Changed
+- Tombol **Pilih Folder Simpan** dan **Kirim ke HP** dalam layout grid (desktop)
+- Tombol **Salin** URL menjadi teks tanpa background (tetap bisa diklik)
+- Antrian file PC→HP dikosongkan saat server di-stop (tidak menumpuk di client)
+- Script build dipindah ke `sys/build_release.ps1` dan `sys/trim_build.py`
+- Resource web/locale/asset dipindah ke `res/`
+
+### Fixed
+- Path resource salah setelah refactor folder (`locales`, `web`, `assets` tidak ditemukan)
+- Daftar file dari PC tetap tampil di browser setelah server dimatikan
+- Upload/unduh tanpa server aktif — pengguna mendapat peringatan jelas
+
 ## [1.2.0] - 2026-05-22
 
 ### Added
@@ -36,5 +58,6 @@ Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Web client untuk upload dari browser
 - Pilih folder simpan, salin URL server
 
+[1.3.0]: https://github.com/ndanggoreng/DatE/releases/tag/v1.3.0
 [1.2.0]: https://github.com/ndanggoreng/DatE/releases/tag/v1.2.0
 [1.0.0]: https://github.com/ndanggoreng/DatE/releases/tag/v1.0.0
