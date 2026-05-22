@@ -1,0 +1,70 @@
+{
+"entries": [
+{
+"time": "2026-05-22 09:24:29",
+"event": "server_start",
+"detail": "http://192.168.1.6:8777 (port 8777)",
+"client": ""
+},
+{
+"time": "2026-05-22 09:24:46",
+"event": "client_connect",
+"detail": "/",
+"client": "192.168.1.7"
+},
+{
+"time": "2026-05-22 09:25:04",
+"event": "upload_start",
+"detail": "SOP TI 12 DESEMBER 2025 .pdf (33173431 bytes)",
+"client": "192.168.1.7"
+},
+{
+"time": "2026-05-22 09:25:04",
+"event": "upload_ok",
+"detail": "SOP TI 12 DESEMBER 2025 .pdf",
+"client": "192.168.1.7"
+},
+{
+"time": "2026-05-22 09:25:25",
+"event": "upload_start",
+"detail": "SOP TI 12 DESEMBER 2025 _1.pdf (33173431 bytes)",
+"client": "192.168.1.7"
+},
+{
+"time": "2026-05-22 09:25:26",
+"event": "upload_ok",
+"detail": "SOP TI 12 DESEMBER 2025 _1.pdf",
+"client": "192.168.1.7"
+},
+{
+"time": "2026-05-22 09:25:35",
+"event": "upload_start",
+"detail": "IMG-20260521-WA0019.jpeg (1320489 bytes)",
+"client": "192.168.1.7"
+},
+{
+"time": "2026-05-22 09:25:35",
+"event": "upload_ok",
+"detail": "IMG-20260521-WA0019.jpeg",
+"client": "192.168.1.7"
+},
+{
+"time": "2026-05-22 09:25:50",
+"event": "server_stop",
+"detail": "",
+"client": ""
+},
+{
+"time": "2026-05-22 09:27:08",
+"event": "server_start",
+"detail": "http://192.168.1.6:8777 (port 8777)",
+"client": ""
+},
+{
+"time": "2026-05-22 09:27:13",
+"event": "server_stop",
+"detail": "",
+"client": ""
+}
+]
+}

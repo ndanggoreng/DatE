@@ -1,0 +1,65 @@
+# -*- mode: python ; coding: utf-8 -*-
+
+a = Analysis(
+    ['DatE.py'],
+    pathex=[],
+    binaries=[],
+    datas=[
+        ('web', 'web'),
+        ('assets', 'assets'),
+        ('locales', 'locales'),
+        ('config.json', '.'),
+        ('server_data.json', '.'),
+    ],
+    hiddenimports=[],
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[],
+    excludes=[
+        'fastapi',
+        'uvicorn',
+        'pydantic',
+        'starlette',
+        'email_validator',
+        'httptools',
+        'websockets',
+        'matplotlib',
+        'numpy',
+        'pandas',
+        'scipy',
+        'tkinter',
+        'unittest',
+        'test',
+    ],
+    noarchive=False,
+    optimize=0,
+)
+pyz = PYZ(a.pure)
+
+exe = EXE(
+    pyz,
+    a.scripts,
+    [],
+    exclude_binaries=True,
+    name='DatE',
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=True,
+    console=False,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+    icon='assets/app_icon.ico',
+)
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name='DatE',
+)
