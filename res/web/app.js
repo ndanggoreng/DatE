@@ -3,6 +3,8 @@ let activeTab = "send";
 let outgoingPollId = null;
 let healthPollId = null;
 let serverOnline = false;
+let isDownloading = false;
+let lastOfflineAlertAt = 0;
 
 const STATUS_TIMEOUT_MS = 4000;
 const HEALTH_INTERVAL_MS = 2500;
@@ -71,6 +73,9 @@ function updateServerBanner() {
 }
 
 function alertServerOffline() {
+    const now = Date.now();
+    if (now - lastOfflineAlertAt < 8000) return;
+    lastOfflineAlertAt = now;
     alert(t("web_server_offline"));
 }
 
@@ -314,33 +319,30 @@ async function loadOutgoing(showAlertOnOffline) {
 }
 
 async function downloadFile(url, name) {
+    if (isDownloading) return;
     if (!(await requireServerOnline(true))) return;
 
     const status = document.getElementById("receiveStatus");
     if (status) status.innerText = t("web_downloading") + " " + name;
 
+    isDownloading = true;
     try {
-        const res = await fetch(url, { cache: "no-store" });
-        if (!res.ok) {
-            setServerOnline(false);
-            alertServerOffline();
-            clearOutgoingList(true);
-            return;
-        }
-        const blob = await res.blob();
-        const blobUrl = URL.createObjectURL(blob);
         const a = document.createElement("a");
-        a.href = blobUrl;
+        a.href = url;
         a.download = name;
         document.body.appendChild(a);
         a.click();
         a.remove();
-        URL.revokeObjectURL(blobUrl);
         if (status) status.innerText = t("web_download_ok");
     } catch (_) {
         setServerOnline(false);
         alertServerOffline();
         clearOutgoingList(true);
+    } finally {
+        // kecilkan kemungkinan multi-trigger klik/tap ganda di mobile
+        setTimeout(() => {
+            isDownloading = false;
+        }, 1200);
     }
 }
 

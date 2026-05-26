@@ -4,6 +4,15 @@ Semua perubahan penting pada proyek Dat E didokumentasikan di file ini.
 
 Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.1] - 2026-05-26
+
+### Fixed
+- Transfer file besar (>2 GB) HP↔PC: upload/download sekarang **streaming per chunk** (tidak load seluruh file ke RAM)
+- Aplikasi EXE tidak lagi **Not Responding** saat menerima/mengirim file sangat besar
+- Progress upload di-throttle (update status tiap ~8 MB / 0.35 detik) agar I/O disk tidak memperlambat transfer
+- Web client: alert server offline tidak berulang (debounce 8 detik)
+- Web client: unduh dari PC tidak memicu notifikasi berkali-kali (lock klik + direct download tanpa `blob()`)
+
 ## [1.3.0] - 2026-05-23
 
 ### Added
@@ -58,6 +67,7 @@ Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Web client untuk upload dari browser
 - Pilih folder simpan, salin URL server
 
+[1.3.1]: https://github.com/ndanggoreng/DatE/releases/tag/v1.3.1
 [1.3.0]: https://github.com/ndanggoreng/DatE/releases/tag/v1.3.0
 [1.2.0]: https://github.com/ndanggoreng/DatE/releases/tag/v1.2.0
 [1.0.0]: https://github.com/ndanggoreng/DatE/releases/tag/v1.0.0

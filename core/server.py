@@ -9,6 +9,7 @@ import socket
 import socketserver
 import sys
 import threading
+import time
 from urllib.parse import unquote
 
 from log.activity_log import append_log, read_logs
@@ -17,6 +18,9 @@ from .paths import app_data_dir, outgoing_dir, res_dir
 from .version import APP_NAME, APP_TAGLINE, APP_VERSION
 
 DEFAULT_PORT = 8000
+CHUNK_SIZE = 1024 * 1024  # 1 MB
+STATUS_UPDATE_INTERVAL_SEC = 0.35
+STATUS_UPDATE_MIN_BYTES = 8 * 1024 * 1024  # 8 MB
 
 
 def ensure_data_files(bundle, data):
@@ -219,13 +223,16 @@ class TransferHandler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _send_file(self, path, content_type):
-        with open(path, "rb") as f:
-            body = f.read()
         self.send_response(200)
         self.send_header("Content-Type", content_type)
-        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Content-Length", str(os.path.getsize(path)))
         self.end_headers()
-        self.wfile.write(body)
+        with open(path, "rb") as f:
+            while True:
+                chunk = f.read(CHUNK_SIZE)
+                if not chunk:
+                    break
+                self.wfile.write(chunk)
 
     def _update_status(self, **kwargs):
         with self._data_lock:
@@ -237,20 +244,23 @@ class TransferHandler(http.server.BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", 0))
         if filename_header:
             filename = os.path.basename(unquote(filename_header))
-            return filename, self.rfile.read(length)
+            return filename, None, length, True
 
         content_type = self.headers.get("Content-Type", "")
         body = self.rfile.read(length)
         if "multipart/form-data" in content_type:
-            return parse_multipart(body, content_type)
-        return None, None
+            filename, file_data = parse_multipart(body, content_type)
+            return filename, file_data, len(file_data) if file_data else 0, False
+        return None, None, 0, False
 
     def _client_ip(self):
         return self.client_address[0] if self.client_address else ""
 
-    def _save_upload(self, filename, file_data):
+    def _save_upload(self, filename, file_data=None, total_size=0, stream=False):
         upload_folder = get_upload_folder(self.data_dir)
-        if not file_data:
+        if stream and total_size <= 0:
+            return None, "Panjang file tidak valid"
+        if not stream and not file_data:
             return None, "File kosong"
 
         file_path = unique_path(upload_folder, filename)
@@ -258,7 +268,7 @@ class TransferHandler(http.server.BaseHTTPRequestHandler):
         client = self._client_ip()
         append_log(
             "upload_start",
-            f"{safe_name} ({len(file_data)} bytes)",
+            f"{safe_name} ({total_size} bytes)",
             client,
         )
 
@@ -268,17 +278,46 @@ class TransferHandler(http.server.BaseHTTPRequestHandler):
             current_file=safe_name,
         )
 
-        total = len(file_data)
-        chunk = 256 * 1024
+        total = total_size
         uploaded = 0
+        last_status_at = time.monotonic()
+        next_status_bytes = STATUS_UPDATE_MIN_BYTES
         try:
             with open(file_path, "wb") as f:
-                for i in range(0, total, chunk):
-                    part = file_data[i : i + chunk]
-                    f.write(part)
-                    uploaded += len(part)
-                    percent = int((uploaded / total) * 100) if total else 100
-                    self._update_status(upload_progress=percent)
+                if stream:
+                    remaining = total
+                    while remaining > 0:
+                        part = self.rfile.read(min(CHUNK_SIZE, remaining))
+                        if not part:
+                            raise OSError("Upload terputus sebelum selesai")
+                        f.write(part)
+                        uploaded += len(part)
+                        remaining -= len(part)
+                        now = time.monotonic()
+                        if (
+                            uploaded >= next_status_bytes
+                            or (now - last_status_at) >= STATUS_UPDATE_INTERVAL_SEC
+                            or uploaded == total
+                        ):
+                            percent = int((uploaded / total) * 100) if total else 100
+                            self._update_status(upload_progress=percent)
+                            last_status_at = now
+                            next_status_bytes = uploaded + STATUS_UPDATE_MIN_BYTES
+                else:
+                    for i in range(0, total, CHUNK_SIZE):
+                        part = file_data[i : i + CHUNK_SIZE]
+                        f.write(part)
+                        uploaded += len(part)
+                        now = time.monotonic()
+                        if (
+                            uploaded >= next_status_bytes
+                            or (now - last_status_at) >= STATUS_UPDATE_INTERVAL_SEC
+                            or uploaded == total
+                        ):
+                            percent = int((uploaded / total) * 100) if total else 100
+                            self._update_status(upload_progress=percent)
+                            last_status_at = now
+                            next_status_bytes = uploaded + STATUS_UPDATE_MIN_BYTES
         except OSError as e:
             append_log("upload_fail", str(e), client)
             self._update_status(uploading=False, current_file="", upload_progress=0)
@@ -350,8 +389,6 @@ class TransferHandler(http.server.BaseHTTPRequestHandler):
             client = self._client_ip()
             append_log("download_start", os.path.basename(file_path), client)
             try:
-                with open(file_path, "rb") as f:
-                    body = f.read()
                 self.send_response(200)
                 self.send_header(
                     "Content-Type", "application/octet-stream"
@@ -360,10 +397,15 @@ class TransferHandler(http.server.BaseHTTPRequestHandler):
                     "Content-Disposition",
                     f'attachment; filename="{os.path.basename(file_path)}"',
                 )
-                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Content-Length", str(os.path.getsize(file_path)))
                 self.send_header("Access-Control-Allow-Origin", "*")
                 self.end_headers()
-                self.wfile.write(body)
+                with open(file_path, "rb") as f:
+                    while True:
+                        chunk = f.read(CHUNK_SIZE)
+                        if not chunk:
+                            break
+                        self.wfile.write(chunk)
                 append_log("download_ok", os.path.basename(file_path), client)
             except OSError as e:
                 append_log("download_fail", str(e), client)
@@ -424,9 +466,9 @@ class TransferHandler(http.server.BaseHTTPRequestHandler):
             return
 
         filename_header = self.headers.get("X-Filename", "")
-        filename, file_data = self._read_upload_body(filename_header)
+        filename, file_data, total_size, stream = self._read_upload_body(filename_header)
 
-        if not filename or file_data is None:
+        if not filename or (stream and total_size <= 0) or (not stream and file_data is None):
             append_log(
                 "upload_fail",
                 "file not readable",
@@ -435,7 +477,12 @@ class TransferHandler(http.server.BaseHTTPRequestHandler):
             self._send_json({"message": "Upload gagal: file tidak terbaca"}, 400)
             return
 
-        saved_path, err = self._save_upload(filename, file_data)
+        saved_path, err = self._save_upload(
+            filename,
+            file_data=file_data,
+            total_size=total_size,
+            stream=stream,
+        )
         if err:
             self._send_json({"message": f"Upload gagal: {err}"}, 500)
             return

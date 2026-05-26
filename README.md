@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.2.0-blue" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.3.1-blue" alt="Version">
   <img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python">
   <img src="https://img.shields.io/badge/platform-Windows-lightgrey" alt="Platform">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
@@ -19,13 +19,14 @@
 
 ## Tentang aplikasi / About
 
-**Dat E (Data Transfer Local)** adalah aplikasi desktop ringan untuk Windows yang menjalankan server file lokal. Perangkat lain (HP, tablet, laptop) cukup membuka browser dan mengunggah file ke PC Anda — cocok untuk berbagi dokumen, foto, atau video dalam satu jaringan WiFi (rumah, kantor, sekolah).
+**Dat E (Data Transfer Local)** adalah aplikasi desktop ringan untuk Windows yang menjalankan server file lokal. Perangkat lain (HP, tablet, laptop) membuka browser untuk **mengirim file ke PC** atau **mengunduh file dari PC** — cocok untuk berbagi dokumen, foto, atau video dalam satu jaringan WiFi (rumah, kantor, sekolah).
 
-**Dat E (Data Transfer Local)** is a lightweight Windows desktop app that runs a local file server. Other devices (phones, tablets, laptops) open a browser and upload files to your PC — ideal for sharing documents, photos, or videos on the same WiFi network.
+**Dat E (Data Transfer Local)** is a lightweight Windows desktop app that runs a local file server. Other devices open a browser to **upload files to your PC** or **download files shared from your PC** — ideal for sharing on the same WiFi network.
 
 ### Kegunaan utama / Main use cases
 
 - Transfer file dari HP ke PC tanpa kabel USB
+- Kirim file dari PC ke HP (browser, tanpa instal di HP)
 - Berbagi file cepat di jaringan lokal
 - Tidak membutuhkan koneksi internet
 - Antarmuka sederhana untuk pengguna non-teknis
@@ -37,8 +38,10 @@
 | Fitur | Deskripsi |
 |-------|-----------|
 | **Server lokal** | Jalankan server HTTP dari aplikasi desktop |
-| **Web client** | Klien berbasis browser — tidak perlu instal di HP |
-| **Pilih folder simpan** | Tentukan lokasi file yang diterima |
+| **Web client** | Klien berbasis browser — kirim ke PC & unduh dari PC |
+| **Kirim ke HP** | PC membagikan file lewat tab Unduh di browser |
+| **Pilih folder simpan** | Tentukan lokasi file yang diterima dari HP |
+| **Deteksi server offline** | Web client memperingatkan jika server belum aktif |
 | **Progress real-time** | Progress upload & jumlah perangkat terhubung |
 | **Port otomatis** | Mencari port kosong jika port default (8000) sibuk |
 | **Log aktivitas** | Riwayat koneksi client & transfer file di Settings |
@@ -119,21 +122,21 @@ python DatE.py
 
 ```powershell
 # Disarankan: build + trim Qt + ZIP release (< 25 MB)
-.\build_release.ps1
+.\sys\build_release.ps1
 ```
 
 Atau manual:
 
 ```bash
 pyinstaller dekstop.spec --noconfirm
-py trim_build.py
+py sys/trim_build.py
 ```
 
 Hasil build:
 
 ```
 dist/DatE/DatE.exe
-release/DatE-v1.2.0-windows.zip   # siap upload ke GitHub Releases
+release/DatE-v1.3.1-windows.zip   # siap upload ke GitHub Releases
 ```
 
 > **Catatan ukuran:** PyInstaller menyertakan banyak library Qt. Script `trim_build.py` menghapus modul yang tidak dipakai (QML, PDF, OpenGL software, terjemahan Qt) agar ZIP release **≤ 25 MB**. Kompresi ZIP memakai 7-Zip (`-mx=9`) jika terinstal.
@@ -148,36 +151,39 @@ Jalankan `DatE.exe` dari folder `dist/DatE/`.
 
 | Langkah | Aksi |
 |--------|------|
-| 1 | Klik **Pilih Folder Simpan** |
+| 1 | Klik **Pilih Folder Simpan** (atau **Kirim ke HP** untuk share ke browser) |
 | 2 | Klik **Mulai Server** |
-| 3 | Klik **Salin** di dalam kotak URL (jika perlu) |
+| 3 | Klik teks **Salin** di kotak URL (jika perlu) |
 | 4 | Buka URL tersebut di browser perangkat lain |
 | 5 | Klik **Stop** untuk menghentikan server |
 
 ### Web client (HP / perangkat lain)
 
-1. Pastikan terhubung ke **WiFi yang sama** dengan PC
+1. Pastikan terhubung ke **WiFi yang sama** dengan PC dan server PC sudah **Online**
 2. Buka URL yang ditampilkan di aplikasi (contoh: `http://192.168.1.10:8000`)
-3. Pilih file — nama file akan ditampilkan
-4. Klik **Kirim File**
+3. **Kirim ke PC:** tab *Kirim ke PC* → pilih file → **Kirim File**
+4. **Unduh dari PC:** tab *Unduh dari PC* → pilih file yang dikirim dari PC → unduh
+
+> Jika server belum aktif, web client menampilkan peringatan dan daftar file dari PC dikosongkan.
 
 ### Settings
 
 - **Log aktivitas** — riwayat koneksi & transfer
 - **Bahasa** — Indonesia / English
-- Log & konfigurasi disimpan di folder yang sama dengan `DatE.exe`
+- Log & konfigurasi: di folder `data/` (development) atau folder yang sama dengan `DatE.exe` (build EXE)
 
 ---
 
 ## Konfigurasi / Configuration
 
-File konfigurasi dibuat otomatis di folder aplikasi:
+File konfigurasi dibuat otomatis di folder data aplikasi (`data/` saat dev, sebelah `DatE.exe` saat build):
 
 | File | Fungsi |
 |------|--------|
 | `config.json` | Folder simpan, port server, bahasa |
 | `server_data.json` | Status server (progress, jumlah file) |
-| `activity_log.json` | Log koneksi & transfer |
+| `log/activity_log.json` | Log koneksi & transfer |
+| `outgoing/` | Antrian file PC → HP (dikosongkan saat server stop) |
 
 Contoh `config.json`:
 
@@ -201,30 +207,30 @@ Contoh `config.json`:
 
 ```
 DateT/
-├── DatE.py              # Aplikasi desktop (PySide6)
-├── server.py            # HTTP server (stdlib)
-├── activity_log.py      # Log aktivitas
-├── i18n.py              # Sistem multi-bahasa
-├── version.py           # Versi aplikasi
-├── dekstop.spec         # Konfigurasi PyInstaller
-├── locales/
-│   ├── id.json          # Terjemahan Indonesia
-│   └── en.json          # Terjemahan English
-├── web/
-│   ├── index.html       # Halaman upload (client)
-│   ├── style.css
-│   └── app.js
-├── assets/
-│   ├── app_icon.png
-│   └── app_icon.ico
-└── README.md
+├── DatE.py              # Launcher
+├── core/
+│   ├── app.py           # UI desktop (PySide6)
+│   ├── server.py        # HTTP server (stdlib)
+│   ├── i18n.py
+│   └── version.py
+├── log/
+│   └── activity_log.py
+├── res/
+│   ├── locales/         # id.json, en.json
+│   ├── web/             # index.html, app.js, style.css
+│   └── assets/          # ikon aplikasi
+├── data/                # config & runtime (gitignore)
+├── sys/
+│   ├── build_release.ps1
+│   └── trim_build.py
+└── dekstop.spec
 ```
 
 ---
 
 ## Menambah bahasa baru / Adding a new language
 
-1. Salin `locales/en.json` → `locales/xx.json` (misalnya `de.json` untuk Jerman)
+1. Salin `res/locales/en.json` → `res/locales/xx.json` (misalnya `de.json` untuk Jerman)
 2. Terjemahkan semua string di file tersebut
 3. Tambahkan kode bahasa di `i18n.py`:
 
@@ -232,7 +238,7 @@ DateT/
 SUPPORTED = ("id", "en", "de")
 ```
 
-4. Tambahkan opsi di dialog Settings (`DatE.py` → `SettingsDialog`)
+4. Tambahkan opsi di dialog Settings (`core/app.py` → `SettingsDialog`)
 
 Kontribusi terjemahan sangat diterima.
 
@@ -245,7 +251,9 @@ Kontribusi terjemahan sangat diterima.
 | HP tidak bisa buka URL | Pastikan PC dan HP di WiFi yang sama; izinkan **Windows Firewall** untuk `DatE.exe` |
 | Server gagal start | Port 8000 mungkin dipakai aplikasi lain — Dat E akan coba port lain otomatis |
 | File tidak tersimpan | Pilih folder simpan **sebelum** mulai server; pastikan path folder valid |
-| Upload gagal di browser | Refresh halaman; coba browser lain (Chrome/Safari) |
+| Upload gagal di browser | Pastikan server PC **Online**; refresh halaman; coba Chrome/Safari |
+| File PC tidak muncul di HP | Klik **Kirim ke HP** di PC dulu; buka tab **Unduh dari PC** |
+| Daftar file tidak hilang setelah stop | Refresh halaman — v1.3+ mengosongkan otomatis saat server mati |
 
 ---
 
@@ -288,5 +296,5 @@ Jika proyek ini membantu Anda, pertimbangkan untuk memberi **star** di GitHub.
 ---
 
 <p align="center">
-  <strong>Dat E</strong> — Data Transfer Local · v1.2.0
+  <strong>Dat E</strong> — Data Transfer Local · v1.3.1
 </p>
